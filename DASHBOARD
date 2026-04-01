@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PMBA PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        .calendar-grid { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 6px; 
+        }
+        .day-cell { 
+            aspect-ratio: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            border-radius: 10px; 
+            font-size: 0.7rem; 
+            background: #ffffff; 
+            border: 1px solid #f1f5f9; 
+            color: #94a3b8;
+            transition: all 0.2s ease;
+            position: relative;
+            cursor: pointer;
+        }
+        .day-cell:active { transform: scale(0.9); }
+        
+        .day-studied { 
+            background: #2563eb !important; 
+            color: white !important; 
+            font-weight: 800; 
+            border: none;
+        }
+        .day-today {
+            border: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 900;
+        }
+        .chart-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+        .chart-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: 900;
+            font-size: 0.85rem;
+            color: #1e293b;
+        }
+        /* Modal Styles */
+        #modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .nav-btn {
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .nav-btn:hover {
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="p-4 max-w-md mx-auto pb-10">
+    <section class="space-y-6">
+        <!-- Cabeçalho -->
+        <header class="flex justify-between items-start px-2">
+            <div>
+                <p class="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">Foco na Farda PMBA</p>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Olá, Recruta! 🫡</h1>
+                <p id="daily-status" class="text-xs text-slate-500 font-medium">Gerencie seu progresso abaixo.</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-slate-800 border-2 border-white shadow-md flex items-center justify-center overflow-hidden">
+                <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+                </svg>
+            </div>
+        </header>
+
+        <!-- Cartão de Destaque -->
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-900 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-blue-200">
+            <h2 class="text-lg font-bold mb-6 opacity-90">Desempenho Geral</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                    <p class="text-[10px] font-black opacity-60 uppercase mb-1 tracking-wider">Tempo Total</p>
+                    <p id="total-hours" class="text-2xl font-black">0h</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                    <p class="text-[10px] font-black opacity-60 uppercase mb-1 tracking-wider">Questões Total</p>
+                    <p id="total-quests" class="text-2xl font-black">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Média Acertos</h3>
+                <div class="chart-container">
+                    <canvas id="chartAproveitamento"></canvas>
+                    <div id="label-aproveitamento" class="chart-label">0%</div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Edital</h3>
+                <div class="chart-container">
+                    <canvas id="chartEdital"></canvas>
+                    <div id="label-edital" class="chart-label">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendário -->
+        <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-2">
+                    <button onclick="changeMonth(-1)" class="nav-btn">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <h3 id="current-month" class="text-xs font-black text-slate-800 uppercase tracking-widest min-w-[120px] text-center">Mês</h3>
+                    <button onclick="changeMonth(1)" class="nav-btn">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+                <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase">Frequência</span>
+            </div>
+            <div class="calendar-grid text-center text-[10px] text-slate-400 font-black mb-3">
+                <span>DOM</span><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SAB</span>
+            </div>
+            <div id="calendar-body" class="calendar-grid"></div>
+        </div>
+    </section>
+
+    <!-- Modal de Registro -->
+    <div id="modal">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 id="modal-date" class="text-xl font-black text-slate-800">01 de Março</h2>
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Registro de Estudo</p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-300 hover:text-slate-500 text-2xl">&times;</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase">O que foi estudado?</label>
+                    <input id="input-subject" type="text" placeholder="Ex: Dir. Constitucional" class="w-full mt-1 p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase">Tempo (min)</label>
+                        <input id="input-time" type="number" placeholder="Ex: 120" class="w-full mt-1 p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase">Questões</label>
+                        <input id="input-quests" type="number" placeholder="Ex: 30" class="w-full mt-1 p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <button onclick="saveStudyData()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-95">Salvar Registro</button>
+                <button onclick="deleteStudyData()" id="btn-delete" class="w-full text-red-400 text-[10px] font-black uppercase tracking-widest mt-2 hidden">Excluir Dados</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedDateKey = null;
+        let charts = {};
+        let currentViewDate = new Date(); 
+
+        const getStorage = () => JSON.parse(localStorage.getItem('pmba_study_data')) || {};
+        const saveToStorage = (data) => localStorage.setItem('pmba_study_data', JSON.stringify(data));
+
+        const setupChart = (id, percent, color) => {
+            if (charts[id]) charts[id].destroy();
+            const displayData = percent === 0 ? [0, 100] : [percent, 100 - percent];
+            const displayColor = percent === 0 ? ['#f1f5f9', '#f1f5f9'] : [color, '#f1f5f9'];
+
+            charts[id] = new Chart(document.getElementById(id), {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: displayData,
+                        backgroundColor: displayColor,
+                        borderWidth: 0,
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    cutout: '82%',
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    animation: { duration: 1000 }
+                }
+            });
+            document.getElementById(`label-${id.replace('chart', '').toLowerCase()}`).innerText = Math.round(percent) + '%';
+        };
+
+        const updateStats = () => {
+            const data = getStorage();
+            let totalMin = 0;
+            let totalQuests = 0;
+
+            Object.values(data).forEach(entry => {
+                totalMin += parseInt(entry.time || 0);
+                totalQuests += parseInt(entry.quests || 0);
+            });
+
+            document.getElementById('total-hours').innerText = Math.floor(totalMin / 60) + 'h ' + (totalMin % 60) + 'm';
+            document.getElementById('total-quests').innerText = totalQuests;
+            
+            setupChart('chartAproveitamento', Math.min((totalQuests/500)*100, 100), '#10b981');
+            setupChart('chartEdital', Math.min((totalMin/3000)*100, 100), '#2563eb');
+        };
+
+        const openModal = (day, month, year) => {
+            selectedDateKey = `${year}-${month}-${day}`;
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            document.getElementById('modal-date').innerText = `${day} de ${monthNames[month]}`;
+            
+            const data = getStorage();
+            const entry = data[selectedDateKey] || { subject: '', time: '', quests: '' };
+            
+            document.getElementById('input-subject').value = entry.subject;
+            document.getElementById('input-time').value = entry.time;
+            document.getElementById('input-quests').value = entry.quests;
+            
+            document.getElementById('btn-delete').classList.toggle('hidden', !data[selectedDateKey]);
+            document.getElementById('modal').style.display = 'flex';
+        };
+
+        const closeModal = () => {
+            document.getElementById('modal').style.display = 'none';
+        };
+
+        const saveStudyData = () => {
+            const data = getStorage();
+            const subject = document.getElementById('input-subject').value;
+            const time = document.getElementById('input-time').value;
+            const quests = document.getElementById('input-quests').value;
+
+            if(!time && !quests && !subject) {
+                delete data[selectedDateKey];
+            } else {
+                data[selectedDateKey] = { subject, time, quests };
+            }
+            
+            saveToStorage(data);
+            closeModal();
+            renderCalendar();
+            updateStats();
+        };
+
+        const deleteStudyData = () => {
+            const data = getStorage();
+            delete data[selectedDateKey];
+            saveToStorage(data);
+            closeModal();
+            renderCalendar();
+            updateStats();
+        };
+
+        const changeMonth = (offset) => {
+            currentViewDate.setMonth(currentViewDate.getMonth() + offset);
+            renderCalendar();
+        };
+
+        const renderCalendar = () => {
+            const cal = document.getElementById('calendar-body');
+            cal.innerHTML = '';
+            const data = getStorage();
+            
+            const realNow = new Date();
+            const viewYear = currentViewDate.getFullYear();
+            const viewMonth = currentViewDate.getMonth();
+            
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            document.getElementById('current-month').innerText = `${monthNames[viewMonth]} ${viewYear}`;
+
+            const firstDayOfMonth = new Date(viewYear, viewMonth, 1).getDay();
+            const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+            
+            for(let empty = 0; empty < firstDayOfMonth; empty++) {
+                cal.appendChild(document.createElement('div'));
+            }
+
+            for(let i = 1; i <= daysInMonth; i++) {
+                const day = document.createElement('div');
+                const key = `${viewYear}-${viewMonth}-${i}`;
+                day.className = 'day-cell';
+                
+                if (i === realNow.getDate() && viewMonth === realNow.getMonth() && viewYear === realNow.getFullYear()) {
+                    day.classList.add('day-today');
+                }
+                
+                if (data[key]) day.classList.add('day-studied');
+                
+                day.innerText = i;
+                day.onclick = () => openModal(i, viewMonth, viewYear);
+                cal.appendChild(day);
+            }
+        };
+
+        window.onload = () => {
+            renderCalendar();
+            updateStats();
+        };
+    </script>
+</body>
+</html>
