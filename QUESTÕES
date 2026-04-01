@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questões - FOCO NA FARDA PMBA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .progress-bar { transition: width 0.5s ease-in-out; }
+    </style>
+</head>
+<body class="p-4 max-w-md mx-auto bg-slate-50 min-h-screen pb-20">
+
+    <!-- Cabeçalho com Gráfico de Aproveitamento -->
+    <div class="mb-8 px-2">
+        <div class="flex justify-between items-end mb-3">
+            <div>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight leading-tight">FOCO NA FARDA<br><span class="text-blue-600">PMBA</span></h1>
+            </div>
+            <div class="text-right">
+                <span id="totalPercent" class="text-3xl font-black text-blue-600">0%</span>
+                <p class="text-[10px] font-black text-slate-400 uppercase">Aproveitamento Total</p>
+            </div>
+        </div>
+        
+        <!-- Gráfico de Barras (Acertos x Erros) -->
+        <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden flex">
+            <div id="barAcertos" class="progress-bar h-full bg-emerald-500" style="width: 0%"></div>
+            <div id="barErros" class="progress-bar h-full bg-red-500" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between mt-1 px-1">
+            <span id="labelAcertos" class="text-[9px] font-bold text-emerald-600 uppercase">Acertos: 0</span>
+            <span id="labelErros" class="text-[9px] font-bold text-red-600 uppercase">Erros: 0</span>
+        </div>
+    </div>
+
+    <!-- Formulário de Lançamento -->
+    <div class="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm mb-8">
+        <h3 class="font-black text-lg mb-6 flex items-center gap-2">
+            <span class="w-2 h-6 bg-blue-600 rounded-full"></span>
+            Lançar Resultado
+        </h3>
+        <form id="resultForm" class="space-y-4">
+            <!-- Menu de Matérias Limpo -->
+            <select id="materia" required class="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer">
+                <option value="">Selecione a Matéria</option>
+            </select>
+            
+            <input type="text" id="assunto" placeholder="Selecione o assunto" required class="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+
+            <!-- Contador de Questões de Hoje (Soma automática ao digitar) -->
+            <div class="pt-2">
+                <div class="flex justify-between items-center mb-2 px-2">
+                    <span class="text-[11px] font-black text-slate-500 uppercase">Questões feitas hoje:</span>
+                    <span id="hojeCount" class="text-sm font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full">0</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 ml-2 uppercase">Acertos</label>
+                        <input type="number" id="acertos" min="0" placeholder="0" required class="w-full p-4 bg-emerald-50 text-emerald-600 border-none rounded-2xl text-center font-black text-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 ml-2 uppercase">Erros</label>
+                        <input type="number" id="erros" min="0" placeholder="0" required class="w-full p-4 bg-red-50 text-red-600 border-none rounded-2xl text-center font-black text-xl focus:ring-2 focus:ring-red-500 outline-none transition-all">
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="w-full bg-slate-900 hover:bg-blue-600 text-white p-5 rounded-2xl font-black shadow-lg transition-all active:scale-95 flex justify-center items-center gap-2">
+                Salvar No Histórico
+            </button>
+        </form>
+    </div>
+
+    <!-- Lista de Histórico -->
+    <div class="space-y-3">
+        <div class="flex justify-between items-center px-2 mb-2">
+            <h4 class="text-[10px] font-black text-slate-400 uppercase">Histórico de Treinos</h4>
+            <button onclick="clearHistory()" class="text-[10px] font-black text-red-400 uppercase hover:text-red-600 transition-colors">Limpar Tudo</button>
+        </div>
+        
+        <div id="historyContainer" class="space-y-3">
+            <!-- JS vai preencher -->
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('resultForm');
+        const historyContainer = document.getElementById('historyContainer');
+        const totalPercentEl = document.getElementById('totalPercent');
+        const barAcertos = document.getElementById('barAcertos');
+        const barErros = document.getElementById('barErros');
+        const labelAcertos = document.getElementById('labelAcertos');
+        const labelErros = document.getElementById('labelErros');
+        const hojeCountEl = document.getElementById('hojeCount');
+        const inputAcertos = document.getElementById('acertos');
+        const inputErros = document.getElementById('erros');
+
+        let treinos = JSON.parse(localStorage.getItem('foconafarda_pmba_treinos')) || [];
+
+        // Função para somar o que está sendo digitado + o que já foi salvo hoje
+        function updateLiveTodayCount() {
+            const hojeDataStr = new Date().toLocaleDateString('pt-BR');
+            let acumuladoHoje = 0;
+
+            // Soma o que já está no histórico
+            treinos.forEach(t => {
+                if (t.dataSimples === hojeDataStr) {
+                    acumuladoHoje += (t.acertos || 0) + (t.erros || 0);
+                }
+            });
+
+            // Soma o que o usuário está digitando agora
+            const digitandoAcertos = parseInt(inputAcertos.value) || 0;
+            const digitandoErros = parseInt(inputErros.value) || 0;
+
+            hojeCountEl.textContent = acumuladoHoje + digitandoAcertos + digitandoErros;
+        }
+
+        // Adiciona ouvintes para atualizar o contador em tempo real
+        inputAcertos.addEventListener('input', updateLiveTodayCount);
+        inputErros.addEventListener('input', updateLiveTodayCount);
+
+        function updateUI() {
+            historyContainer.innerHTML = '';
+            const hojeDataStr = new Date().toLocaleDateString('pt-BR');
+            
+            let totalAcertos = 0;
+            let totalErros = 0;
+
+            if (treinos.length === 0) {
+                historyContainer.innerHTML = `<div class="p-8 text-center text-slate-300 font-bold italic text-sm">Nenhum treino registrado ainda.</div>`;
+                totalPercentEl.textContent = '0%';
+                barAcertos.style.width = '0%';
+                barErros.style.width = '0%';
+                hojeCountEl.textContent = '0';
+                labelAcertos.textContent = 'Acertos: 0';
+                labelErros.textContent = 'Erros: 0';
+                return;
+            }
+
+            [...treinos].reverse().forEach((treino) => {
+                const totalTreino = (treino.acertos || 0) + (treino.erros || 0);
+                const perc = totalTreino > 0 ? Math.round((treino.acertos / totalTreino) * 100) : 0;
+                
+                totalAcertos += (treino.acertos || 0);
+                totalErros += (treino.erros || 0);
+
+                const div = document.createElement('div');
+                div.className = "p-4 bg-white border border-slate-100 rounded-2xl flex justify-between items-center shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300";
+                div.innerHTML = `
+                    <div>
+                        <p class="text-[10px] font-black text-blue-600 uppercase tracking-tighter">${treino.materia || 'Geral'}</p>
+                        <p class="text-xs font-bold text-slate-800 line-clamp-1">${treino.assunto}</p>
+                        <p class="text-[9px] font-medium text-slate-400 mt-0.5">${treino.dataHora}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex gap-1">
+                            <span class="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black">${treino.acertos} ✅</span>
+                            <span class="px-2 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-black">${treino.erros} ❌</span>
+                        </div>
+                        <div class="text-right min-w-[35px]">
+                            <span class="text-xs font-black ${perc >= 70 ? 'text-emerald-500' : 'text-amber-500'}">${perc}%</span>
+                        </div>
+                    </div>
+                `;
+                historyContainer.appendChild(div);
+            });
+
+            const totalGeral = totalAcertos + totalErros;
+            const totalPerc = totalGeral > 0 ? Math.round((totalAcertos / totalGeral) * 100) : 0;
+            
+            // Atualizar Gráfico e Labels
+            totalPercentEl.textContent = `${totalPerc}%`;
+            labelAcertos.textContent = `Acertos: ${totalAcertos}`;
+            labelErros.textContent = `Erros: ${totalErros}`;
+            updateLiveTodayCount(); // Atualiza o contador de hoje
+
+            if (totalGeral > 0) {
+                barAcertos.style.width = `${(totalAcertos / totalGeral) * 100}%`;
+                barErros.style.width = `${(totalErros / totalGeral) * 100}%`;
+            }
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const agora = new Date();
+
+            const novoTreino = {
+                id: Date.now(),
+                materia: document.getElementById('materia').value || "Geral",
+                assunto: document.getElementById('assunto').value,
+                acertos: parseInt(inputAcertos.value || 0),
+                erros: parseInt(inputErros.value || 0),
+                dataSimples: agora.toLocaleDateString('pt-BR'),
+                dataHora: agora.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+            };
+
+            treinos.push(novoTreino);
+            localStorage.setItem('foconafarda_pmba_treinos', JSON.stringify(treinos));
+            
+            form.reset();
+            updateUI();
+
+            const btn = form.querySelector('button');
+            btn.innerHTML = "Lançado!";
+            btn.classList.replace('bg-slate-900', 'bg-emerald-500');
+            setTimeout(() => {
+                btn.innerHTML = "Salvar No Histórico";
+                btn.classList.replace('bg-emerald-500', 'bg-slate-900');
+            }, 1500);
+        });
+
+        function clearHistory() {
+            if (confirm('Apagar todo o histórico e gráfico?')) {
+                treinos = [];
+                localStorage.removeItem('foconafarda_pmba_treinos');
+                updateUI();
+            }
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
