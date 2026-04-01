@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FOCO NA FARDA - PMBA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .topic-checked {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+    </style>
+</head>
+<body class="p-4 pb-20 max-w-md mx-auto bg-slate-50 min-h-screen">
+    <header class="mb-8 mt-4">
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight">FOCO NA FARDA PMBA</h1>
+        <p class="text-sm font-bold text-slate-500 uppercase tracking-widest">Edital Completo e Detalhado</p>
+        
+        <div class="mt-6 bg-blue-600 rounded-3xl p-6 text-white shadow-xl shadow-blue-200">
+            <div class="flex justify-between items-end">
+                <div>
+                    <p class="text-xs font-bold opacity-80 uppercase">Progresso Geral</p>
+                    <h2 id="total-percent" class="text-4xl font-black">0%</h2>
+                </div>
+                <div class="text-right">
+                    <p id="total-count" class="text-[10px] font-bold opacity-80 uppercase">0 de 0 Tópicos</p>
+                </div>
+            </div>
+            <div class="mt-4 h-2 w-full bg-blue-400/30 rounded-full overflow-hidden">
+                <div id="total-bar" class="h-full bg-white rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+    </header>
+
+    <div id="edital-container" class="space-y-6">
+        <!-- Conteúdo gerado via JS -->
+    </div>
+
+    <script>
+        const editalData = [
+            {
+                materia: "Língua Portuguesa",
+                topicos: [
+                    "1. Compreensão e interpretação de textos",
+                    "2. Tipologia textual e gêneros textuais",
+                    "3. Ortografia oficial",
+                    "4. Acentuação gráfica",
+                    "5. Classes de palavras",
+                    "6. Uso do sinal indicativo de crase",
+                    "7. Sintaxe da oração e do período",
+                    "8. Pontuação",
+                    "9. Concordância nominal e verbal",
+                    "10. Regência nominal e verbal",
+                    "11. Significação das palavras"
+                ]
+            },
+            {
+                materia: "História do Brasil",
+                topicos: [
+                    "1. Descobrimento do Brasil (1500)",
+                    "2. Brasil Colônia (1530–1815): Capitanias Hereditárias",
+                    "2.1. Economia e Extrativismo Vegetal",
+                    "2.2. Extrativismo Mineral e Pecuária",
+                    "2.3. Escravidão",
+                    "2.4. Organização Político-Administrativa",
+                    "2.5. Expansão Territorial",
+                    "3. Independência do Brasil (1822): Nomeação do Príncipe Regente D. Pedro I",
+                    "3.1. Dia do Fico",
+                    "3.2. Reconhecimento da Independência do Brasil",
+                    "4. Primeiro Reinado (1822-1831)",
+                    "5. Segundo Reinado (1831-1840)",
+                    "6. Primeira República (1889-1930): o Primeiro Governo Provisório",
+                    "6.1. Assembleia Constituinte",
+                    "6.2. Presidência de Deodoro da Fonseca",
+                    "6.3. A Política dos Governadores",
+                    "6.4. O Coronelismo",
+                    "6.5. Movimentos Tenentistas",
+                    "6.6. Coluna Prestes",
+                    "6.7. Revolta da Armada",
+                    "7. Revolução de 1930",
+                    "8. Era Vargas (1930-1945)",
+                    "9. Os Presidentes do Brasil de 1964 à atualidade",
+                    "10. História da Bahia",
+                    "11. Independência da Bahia",
+                    "12. Revolta de Canudos",
+                    "13. Revolta dos Malês",
+                    "14. Conjuração Baiana",
+                    "15. Sabinada"
+                ]
+            },
+            {
+                materia: "Geografia do Brasil",
+                topicos: [
+                    "1. Relevo brasileiro",
+                    "2. Urbanização: crescimento urbano",
+                    "2.1. Problemas estruturais",
+                    "2.2. Contingente populacional brasileiro",
+                    "3. Matriz energética brasileira: eólica e hidráulica",
+                    "3.1. Matriz energética: biomassa, solar e a das marés",
+                    "4. Problemas Ambientais",
+                    "5. Clima: pressão atmosférica, umidade, temperatura",
+                    "5.1. Fatores que determinam o clima",
+                    "5.2. Mudanças climáticas e as suas consequências",
+                    "6. Geografia da Bahia: aspectos políticos e físicos",
+                    "6.1. Geografia da Bahia: aspectos econômicos, sociais e culturais"
+                ]
+            },
+            {
+                materia: "Matemática",
+                topicos: [
+                    "1. Conjuntos numéricos: Naturais, Inteiros, Racionais, Reais",
+                    "1.1. Números Complexos (forma algébrica e trigonométrica)",
+                    "1.2. Operações, propriedades e aplicações",
+                    "1.3. Sequências numéricas, progressão aritmética e geométrica",
+                    "2. Álgebra: Expressões algébricas",
+                    "2.1. Polinômios: operações e propriedades",
+                    "2.2. Equações polinomiais e inequações relacionadas",
+                    "3. Funções: generalidades",
+                    "3.1. Funções elementares: 1º grau e 2º grau",
+                    "3.2. Funções modular, exponencial e logarítmica",
+                    "3.3. Gráficos e Propriedades",
+                    "4. Sistemas lineares, Matrizes e Determinantes: Propriedades e aplicações",
+                    "5. Análise Combinatória: Arranjos, Permutações e Combinações simples",
+                    "5.1. Binômio de Newton",
+                    "5.2. Probabilidade em espaços amostrais finitos",
+                    "6. Geometria Plana: figuras geométricas, congruência, semelhança, perímetro e área",
+                    "6.1. Geometria espacial: paralelismo, perpendicularismo entre retas e planos",
+                    "6.2. Áreas e volumes dos sólidos: prisma e pirâmide",
+                    "6.3. Áreas e volumes dos sólidos: cilindro, cone e esfera",
+                    "6.4. Geometria analítica no plano: retas, circunferência e distâncias",
+                    "7. Trigonometria: razões trigonométricas e funções",
+                    "7.1. Fórmulas de transformações trigonométricas, equações e triângulos"
+                ]
+            },
+            {
+                materia: "Atualidades",
+                topicos: [
+                    "1. Globalização: conceitos e efeitos",
+                    "1.1. Implicações sociais, econômicas, políticas e culturais da globalização",
+                    "2. Multiculturalidade, Pluralidade e Diversidade Cultural",
+                    "3. Tecnologias de Informação e Comunicação: conceitos e efeitos",
+                    "3.1. Implicações sociais, econômicas, políticas e culturais das TICs"
+                ]
+            },
+            {
+                materia: "Informática",
+                topicos: [
+                    "1. Edição de textos (Word, Writer)",
+                    "1.1. Planilhas (Excel, Calc)",
+                    "1.2. Apresentações (PowerPoint, Impress)",
+                    "1.3. Microsoft Office (versão 2007 e superiores)",
+                    "1.4. LibreOffice (versão 5.0 e superiores)",
+                    "2. Sistemas operacionais Windows 7, Windows 10 e Linux",
+                    "3. Organização e gerenciamento de informações, arquivos, pastas e programas",
+                    "4. Atalhos de teclado, ícones, área de trabalho e lixeira",
+                    "5. Tecnologias, ferramentas e aplicativos associados à Internet e intranet",
+                    "5.1. Procedimentos associados à Internet e intranet",
+                    "6. Correio eletrônico",
+                    "7. Computação em nuvem"
+                ]
+            },
+            {
+                materia: "Direito Constitucional",
+                topicos: [
+                    "1.1. Dos princípios fundamentais (CF/88)",
+                    "1.2. Dos Direitos e garantias fundamentais (CF/88)",
+                    "1.3. Da organização do Estado (CF/88)",
+                    "1.4. Da Administração Pública (CF/88)",
+                    "1.5. Dos militares dos Estados, DF e Territórios (CF/88)",
+                    "1.6. Da Segurança Pública (CF/88)",
+                    "2.1. Dos princípios fundamentais (Const. Bahia)",
+                    "2.2. Direitos e garantias fundamentais (Const. Bahia)",
+                    "2.3. Dos Servidores Públicos Militares (Const. Bahia)",
+                    "2.4. Da Segurança Pública (Const. Bahia)"
+                ]
+            },
+            {
+                materia: "Direitos Humanos",
+                topicos: [
+                    "1. A Declaração Universal dos Direitos Humanos/1948",
+                    "2. Convenção Americana sobre Direitos Humanos/1969 (Pacto de SJCR - art. 1° ao 32)",
+                    "3. Pacto Internacional dos Direitos Econômicos, Sociais e Culturais (art. 1° ao 15)",
+                    "4. Declaração de Pequim (Quarta Conf. Mulheres): Ação para Igualdade, Desenvolvimento e Paz"
+                ]
+            },
+            {
+                materia: "Direito Administrativo",
+                topicos: [
+                    "1. Administration Pública",
+                    "2. Princípios fundamentais da administração pública",
+                    "3. Poderes e deveres: uso e abuso do poder",
+                    "3.1. Poderes vinculado, discricionário, hierárquico, disciplinar e regulamentar",
+                    "3.2. Poder de polícia e deveres dos administradores públicos",
+                    "4. Servidores públicos: cargo, emprego e função públicos",
+                    "5. Regime jurídico do militar estadual (Lei 7.990/2001 – arts 1º ao 59)"
+                ]
+            },
+            {
+                materia: "Direito Penal",
+                topicos: [
+                    "1. Do crime: Elementos",
+                    "2.2. Consumação e tentativa",
+                    "2.3. Desistência voluntária e arrependimento eficaz",
+                    "2.4. Arrependimento posterior",
+                    "2.5. Crime impossível",
+                    "2.6. Causas de exclusão de ilicitude e culpabilidade",
+                    "3. Contravenção",
+                    "4. Dos crimes contra a vida (homicídio, lesão corporal, rixa)",
+                    "5. Crimes contra liberdade pessoal (constrangimento, ameaça, perseguição, sequestro e cárcere)",
+                    "6. Crimes contra o patrimônio (furto, roubo, extorsão, apropriação, receptação)",
+                    "7. Crimes contra a dignidade sexual (estupro, importunação, assédio sexual)",
+                    "8. Corrupção ativa",
+                    "9. Corrupção passiva",
+                    "10. Lei n° 9.455/1997 (Crimes de tortura)"
+                ]
+            },
+            {
+                materia: "Igualdade Racial e de Gênero",
+                topicos: [
+                    "1. CF/88 (art. 1°, 3°, 4° e 5°)",
+                    "2. Constituição do Estado da Bahia (Cap. XXIII 'Do Negro')",
+                    "3. Lei n° 12.288/2010 (Estatuto da Igualdade Racial)",
+                    "4. Lei nº 7.716/1989 (Crimes de preconceito de raça ou cor)",
+                    "4.1. Lei n° 9.459/1997 (Tipificação de crimes de preconceito)",
+                    "5. Decreto n° 65.810/1969 (Eliminação da discriminação racial)",
+                    "6. Decreto n° 4.377/2002 (Eliminação da discriminação contra a mulher)",
+                    "7. Lei nº 11.340/2006 (Lei Maria da Penha)",
+                    "8. Código Penal Brasileiro (art. 140)",
+                    "9. Lei n° 9.455/1997 (Crime de Tortura)",
+                    "11. Lei nº 7.437/1985 (Lei Caó)",
+                    "12. Lei Estadual n° 10.549/2006 (Secretaria de Promoção da Igualdade Racial)",
+                    "13. Lei nº 10.678/2003 (Secretaria de Políticas de Promoção da Igualdade Racial)"
+                ]
+            },
+            {
+                materia: "Direito Penal Militar",
+                topicos: [
+                    "1. Crimes contra a autoridade: motim, revolta, conspiração",
+                    "1.1. Aliciação para motim ou revolta",
+                    "2. Da violência contra superior ou militar de serviço",
+                    "3. Desrespeito a superior",
+                    "4. Recusa de obediência",
+                    "5. Reunião ilícita",
+                    "6. Publicação ou crítica indevida",
+                    "7. Resistência mediante ameaça ou violência",
+                    "8. Crimes contra o dever militar: deserção e abandono de posto",
+                    "8.1. Descumprimento de missão, embriaguez e dormir em serviço",
+                    "9. Crimes contra a Administração Militar: desacato a superior e a militar",
+                    "9.1. Desobediência, peculato, peculato-furto e concussão",
+                    "10. Dos crimes contra o dever funcional: prevaricação"
+                ]
+            }
+        ];
+
+        const container = document.getElementById('edital-container');
+        let totalItems = 0;
+        let completedItems = 0;
+
+        function renderEdital() {
+            container.innerHTML = '';
+            totalItems = 0;
+            completedItems = 0;
+
+            editalData.forEach((item, materiaIdx) => {
+                const materiaCompleted = item.topicos.filter((_, tIdx) => 
+                    localStorage.getItem(`foco-pmba-${materiaIdx}-${tIdx}`) === 'true'
+                ).length;
+                
+                const percent = Math.round((materiaCompleted / item.topicos.length) * 100);
+                totalItems += item.topicos.length;
+                completedItems += materiaCompleted;
+
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm";
+                
+                card.innerHTML = `
+                    <div class="p-6 flex justify-between items-center bg-slate-50/80">
+                        <div class="max-w-[70%]">
+                            <h3 class="text-sm font-black text-slate-800 leading-tight">${item.materia}</h3>
+                            <p class="text-[10px] font-bold text-blue-600 uppercase mt-1">${materiaCompleted} de ${item.topicos.length} TÓPICOS</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full border-4 border-slate-200 relative flex items-center justify-center">
+                            <svg class="absolute inset-0 w-full h-full -rotate-90">
+                                <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" fill="transparent" 
+                                    class="text-blue-600 transition-all duration-700" style="stroke-dasharray: 126; stroke-dashoffset: ${126 - (126 * percent / 100)}"/>
+                            </svg>
+                            <span class="text-[10px] font-black">${percent}%</span>
+                        </div>
+                    </div>
+                    <div class="p-4 space-y-2">
+                        ${item.topicos.map((topico, topicoIdx) => {
+                            const isDone = localStorage.getItem(`foco-pmba-${materiaIdx}-${topicoIdx}`) === 'true';
+                            return `
+                                <div onclick="toggleTopic(${materiaIdx}, ${topicoIdx})" 
+                                     class="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 cursor-pointer transition-all hover:bg-slate-50 ${isDone ? 'topic-checked' : ''}">
+                                    <div class="w-5 h-5 rounded-lg border-2 flex-shrink-0 flex items-center justify-center transition-all ${isDone ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-100' : 'border-slate-200'}">
+                                        ${isDone ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
+                                    </div>
+                                    <span class="text-[11px] font-bold text-slate-700 leading-snug">${topico}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            updateHeader();
+        }
+
+        function toggleTopic(mIdx, tIdx) {
+            const key = `foco-pmba-${mIdx}-${tIdx}`;
+            const current = localStorage.getItem(key) === 'true';
+            localStorage.setItem(key, !current);
+            renderEdital();
+        }
+
+        function updateHeader() {
+            const totalPercent = Math.round((completedItems / totalItems) * 100) || 0;
+            document.getElementById('total-percent').innerText = `${totalPercent}%`;
+            document.getElementById('total-count').innerText = `${completedItems} DE ${totalItems} TÓPICOS`;
+            document.getElementById('total-bar').style.width = `${totalPercent}%`;
+        }
+
+        window.onload = renderEdital;
+    </script>
+</body>
+</html>
