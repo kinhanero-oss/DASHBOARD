@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashcards - PMBA PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .hide { display: none !important; }
+        
+        /* Efeito de Giro do Card */
+        .flashcard-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .flashcard-flipped { transform: rotateY(180deg); }
+        .flashcard-face {
+            backface-visibility: hidden;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border-radius: 1.5rem;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        .flashcard-front { background: white; color: #1e293b; font-weight: 700; font-size: 0.85rem; }
+        .flashcard-back { transform: rotateY(180deg); background: #2563eb; color: white; font-size: 0.85rem; }
+        
+        /* Scroll suave horizontal */
+        .cards-slider {
+            display: flex;
+            overflow-x: auto;
+            gap: 1rem;
+            padding: 10px 5px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+        .card-container {
+            flex: 0 0 260px;
+            height: 180px;
+            scroll-snap-align: center;
+        }
+        .cards-slider::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="p-4 pb-10">
+
+    <header class="flex justify-between items-center mb-8 px-2">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tighter">Flashcards</h1>
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Memorização Ativa</p>
+        </div>
+        <button onclick="toggleForm()" class="bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-200 active:scale-90 transition-transform">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="3"/></svg>
+        </button>
+    </header>
+
+    <section id="card-form" class="bg-white p-6 rounded-[2.5rem] border border-blue-100 shadow-xl mb-8 hide space-y-4">
+        <input type="text" id="fc-folder" placeholder="Matéria (ex: Direito Penal)" class="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none focus:ring-2 focus:ring-blue-500 outline-none">
+        <textarea id="fc-front" placeholder="Pergunta ou Termo" class="w-full p-4 bg-slate-50 rounded-2xl text-sm h-20 border-none focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+        <textarea id="fc-back" placeholder="Resposta ou Definição" class="w-full p-4 bg-slate-50 rounded-2xl text-sm h-20 border-none focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+        <div class="flex gap-2">
+            <button onclick="saveCard()" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">Salvar Card</button>
+            <button onclick="toggleForm()" class="px-6 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black">Sair</button>
+        </div>
+    </section>
+
+    <div id="flashcard-display" class="space-y-6">
+        </div>
+
+    <script>
+        let cards = JSON.parse(localStorage.getItem('pmba_flashcards')) || [];
+
+        function toggleForm() {
+            document.getElementById('card-form').classList.toggle('hide');
+        }
+
+        function saveCard() {
+            const folder = document.getElementById('fc-folder').value.trim();
+            const front = document.getElementById('fc-front').value.trim();
+            const back = document.getElementById('fc-back').value.trim();
+
+            if (folder && front && back) {
+                cards.push({ folder, front, back, id: Date.now() });
+                localStorage.setItem('pmba_flashcards', JSON.stringify(cards));
+                renderCards();
+                document.getElementById('fc-front').value = '';
+                document.getElementById('fc-back').value = '';
+                alert("Card adicionado!");
+            } else {
+                alert("Preencha todos os campos.");
+            }
+        }
+
+        function deleteCard(id) {
+            if(confirm("Deseja excluir este card?")) {
+                cards = cards.filter(c => c.id !== id);
+                localStorage.setItem('pmba_flashcards', JSON.stringify(cards));
+                renderCards();
+            }
+        }
+
+        function renderCards() {
+            const container = document.getElementById('flashcard-display');
+            container.innerHTML = '';
+
+            if (cards.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-20 opacity-30">
+                        <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2" stroke-width="2"/></svg>
+                        <p class="font-black uppercase text-xs tracking-widest">Nenhum card criado</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const folders = [...new Set(cards.map(c => c.folder))];
+
+            folders.forEach(folderName => {
+                const folderCards = cards.filter(c => c.folder === folderName);
+                const folderDiv = document.createElement('div');
+                folderDiv.className = 'bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden';
+                
+                folderDiv.innerHTML = `
+                    <div class="p-6 flex justify-between items-center bg-slate-50/50">
+                        <div>
+                            <h3 class="text-sm font-black text-slate-800 uppercase tracking-tighter">${folderName}</h3>
+                            <p class="text-[10px] text-blue-600 font-bold uppercase">${folderCards.length} Cards</p>
+                        </div>
+                        <button onclick="this.parentElement.nextElementSibling.classList.toggle('hide')" class="p-2 bg-white rounded-xl shadow-sm text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="3"/></svg>
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <div class="cards-slider">
+                            ${folderCards.map(c => `
+                                <div class="card-container" onclick="this.children[0].classList.toggle('flashcard-flipped')">
+                                    <div class="flashcard-inner">
+                                        <div class="flashcard-face flashcard-front">
+                                            <button onclick="event.stopPropagation(); deleteCard(${c.id})" class="absolute top-3 right-3 text-slate-200 hover:text-red-400">
+                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/></svg>
+                                            </button>
+                                            ${c.front}
+                                        </div>
+                                        <div class="flashcard-face flashcard-back italic">
+                                            ${c.back}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <p class="text-[9px] text-center text-slate-300 font-bold mt-4 uppercase tracking-widest">Deslize para o lado para ver mais</p>
+                    </div>
+                `;
+                container.appendChild(folderDiv);
+            });
+        }
+
+        window.onload = renderCards;
+    </script>
+</body>
+</html>
