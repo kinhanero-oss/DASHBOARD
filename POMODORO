@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foco - PMBA PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #progress-ring { 
+            transition: stroke-dashoffset 1s linear; 
+            transform: rotate(-90deg); 
+            transform-origin: 50% 50%; 
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .history-scroll {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        /* Custom scrollbar */
+        .history-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .history-scroll::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="p-4 max-w-md mx-auto flex flex-col items-center min-h-screen bg-slate-50 font-sans">
+    
+    <!-- Título Superior -->
+    <div class="mt-8 mb-6 w-full text-center">
+        <h1 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Foco na Farda PMBA</h1>
+    </div>
+
+    <!-- Container Principal do Cronómetro (Aumentado) -->
+    <div class="bg-white p-10 rounded-[4rem] border border-slate-100 shadow-sm text-center w-full">
+        <!-- Círculo do Cronômetro Aumentado (w-64 h-64) -->
+        <div class="relative w-64 h-64 mx-auto mb-10">
+            <svg class="w-full h-full" viewBox="0 0 192 192">
+                <circle cx="96" cy="96" r="88" stroke="#f1f5f9" stroke-width="8" fill="transparent" />
+                <circle id="progress-ring" cx="96" cy="96" r="88" stroke="#2563eb" stroke-width="8" fill="transparent" 
+                    stroke-dasharray="553" stroke-dashoffset="553" />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <!-- Fonte do tempo aumentada -->
+                <span id="timer-display" class="text-6xl font-black text-slate-800 tracking-tighter">00:00</span>
+                <p id="session-status" class="text-xs font-black text-blue-500 uppercase tracking-widest mt-2">Estudando</p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3">
+            <button id="btn-start" class="bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-blue-700 active:scale-95 transition-all">
+                Iniciar
+            </button>
+            <button id="btn-pause" class="bg-slate-800 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-slate-900 active:scale-95 transition-all">
+                Pausar
+            </button>
+            <button id="btn-finish" class="bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-emerald-600 active:scale-95 transition-all">
+                Finalizar
+            </button>
+            <button id="btn-reset" class="bg-slate-100 text-slate-500 py-4 rounded-2xl font-black hover:bg-slate-200 active:scale-95 transition-all">
+                Zerar
+            </button>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="grid grid-cols-2 gap-4 mt-8 w-full">
+        <div class="bg-white p-6 rounded-3xl border border-slate-100 text-center">
+            <p class="text-[10px] font-black text-slate-400 uppercase">Tempo Total</p>
+            <p id="stat-hours" class="text-xl font-black text-slate-800">0h 0m 0s</p>
+        </div>
+        <div class="bg-white p-6 rounded-3xl border border-slate-100 text-center">
+            <p class="text-[10px] font-black text-slate-400 uppercase">Sessões</p>
+            <p id="stat-sessions" class="text-xl font-black text-slate-800">0</p>
+        </div>
+    </div>
+
+    <!-- Histórico -->
+    <div class="mt-8 w-full mb-10">
+        <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Histórico de Sessões</h2>
+        <div id="history-container" class="bg-white rounded-3xl border border-slate-100 p-2 history-scroll">
+            <p id="history-empty" class="text-center py-6 text-slate-300 text-sm italic">Nenhuma sessão finalizada.</p>
+            <div id="history-list" class="flex flex-col gap-2"></div>
+        </div>
+    </div>
+
+    <script>
+        const CYCLE_TIME = 25 * 60; 
+        const CIRCUMFERENCE = 2 * Math.PI * 88;
+
+        let secondsElapsed = 0;
+        let timerId = null;
+        let totalSecondsCompleted = 0;
+        let sessionCount = 0;
+
+        const timerDisplay = document.getElementById('timer-display');
+        const progressRing = document.getElementById('progress-ring');
+        const btnStart = document.getElementById('btn-start');
+        const btnPause = document.getElementById('btn-pause');
+        const btnFinish = document.getElementById('btn-finish');
+        const btnReset = document.getElementById('btn-reset');
+        const statHours = document.getElementById('stat-hours');
+        const statSessions = document.getElementById('stat-sessions');
+        const historyList = document.getElementById('history-list');
+        const historyEmpty = document.getElementById('history-empty');
+
+        function formatTime(totalSeconds) {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            return { h, m, s, text: `${h}h ${m}m ${s}s` };
+        }
+
+        function updateDisplay() {
+            const minutes = Math.floor(secondsElapsed / 60);
+            const seconds = secondsElapsed % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            const progress = (secondsElapsed % CYCLE_TIME) / CYCLE_TIME;
+            const offset = CIRCUMFERENCE - (progress * CIRCUMFERENCE);
+            progressRing.style.strokeDashoffset = offset;
+        }
+
+        function startTimer() {
+            if (timerId) return;
+            timerId = setInterval(() => {
+                secondsElapsed++;
+                updateDisplay();
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            clearInterval(timerId);
+            timerId = null;
+        }
+
+        function addHistoryItem(durationSeconds) {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('pt-BR');
+            const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            
+            const h = Math.floor(durationSeconds / 3600);
+            const m = Math.floor((durationSeconds % 3600) / 60);
+            const s = durationSeconds % 60;
+            
+            let durationText = "";
+            if (h > 0) durationText += `${h}h `;
+            if (m > 0 || h > 0) durationText += `${m}m `;
+            durationText += `${s}s`;
+
+            const item = document.createElement('div');
+            item.className = 'flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in slide-in-from-top-1';
+            item.innerHTML = `
+                <div class="text-left">
+                    <p class="text-xs font-black text-slate-800">${dateStr} às ${timeStr}</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Duração da sessão</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-sm font-black text-blue-600">+${durationText}</span>
+                </div>
+            `;
+            
+            historyEmpty.classList.add('hidden');
+            historyList.prepend(item);
+        }
+
+        function finishSession() {
+            if (secondsElapsed <= 0) return;
+
+            addHistoryItem(secondsElapsed);
+            totalSecondsCompleted += secondsElapsed;
+            sessionCount++;
+            
+            secondsElapsed = 0;
+            pauseTimer();
+            updateStats();
+            updateDisplay();
+        }
+
+        function resetEverything() {
+            pauseTimer();
+            secondsElapsed = 0;
+            updateDisplay();
+        }
+
+        function updateStats() {
+            const time = formatTime(totalSecondsCompleted);
+            statHours.textContent = time.text;
+            statSessions.textContent = sessionCount;
+        }
+
+        btnStart.addEventListener('click', startTimer);
+        btnPause.addEventListener('click', pauseTimer);
+        btnFinish.addEventListener('click', finishSession);
+        btnReset.addEventListener('click', resetEverything);
+
+        progressRing.style.strokeDasharray = CIRCUMFERENCE;
+        updateDisplay();
+    </script>
+</body>
+</html>
